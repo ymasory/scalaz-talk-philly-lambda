@@ -1,0 +1,326 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+        <title>Functors, Monads, and Other Scary Words: Programming with Scalaz</title>
+        <link type="text/css" rel="stylesheet" href="assets/css/show.css" />
+        <link type="text/css" rel="stylesheet" href="assets/css/prettify.css" />
+        <script type="text/javascript" src="assets/js/jquery.min.js"></script>
+        <script type="text/javascript" src="assets/js/show.js"></script>
+        <script type="text/javascript" src="assets/js/prettify/prettify.js"></script>
+        <script type="text/javascript" src="assets/js/prettify/lang-apollo.js"></script><script type="text/javascript" src="assets/js/prettify/lang-css.js"></script><script type="text/javascript" src="assets/js/prettify/lang-hs.js"></script><script type="text/javascript" src="assets/js/prettify/lang-lisp.js"></script><script type="text/javascript" src="assets/js/prettify/lang-lua.js"></script><script type="text/javascript" src="assets/js/prettify/lang-ml.js"></script><script type="text/javascript" src="assets/js/prettify/lang-proto.js"></script><script type="text/javascript" src="assets/js/prettify/lang-scala.js"></script><script type="text/javascript" src="assets/js/prettify/lang-sql.js"></script><script type="text/javascript" src="assets/js/prettify/lang-sql.js"></script><script type="text/javascript" src="assets/js/prettify/lang-vb.js"></script><script type="text/javascript" src="assets/js/prettify/lang-vhdl.js"></script><script type="text/javascript" src="assets/js/prettify/lang-wiki.js"></script><script type="text/javascript" src="assets/js/prettify/lang-yaml.js"></script><link type="text/css" rel="stylesheet" href="css/custom.css?1338512207098" />
+      <script type="text/javascript"><!--
+        window.onload=function() { prettyPrint(); };
+      --></script>
+      </head>
+      <body>
+        <div id="slides">
+          <div id="reel">
+            <div class="content" id="slide-0">
+       <div class="container"><h1 id="Thinking+Monadically+in+Scala+%28%3A%29">Thinking Monadically in Scala (:)</h1><h1 id="Programming+with+Scalaz">Programming with Scalaz</h1><ul><li>Yuvi Masory, Combinatory Solutions Inc
+</li><li>@ymasory
+</li><li>http://yuvimasory.com/talks
+</li><li>May 29, 2012
+</li><li>Philly Lambda
+</li><li>A few bits from Mike Pilquist’s Scalaz <a  href="https://github.com/mpilquist/scalaz-talk">talk</a>
+</li></ul><p><img alt="pic" title="scalaz code" src="main/scary.png" />
+</p></div>
+      </div><div class="content" id="slide-1">
+       <div class="container"><h1 id="Scalaz+7">Scalaz 7</h1><ul><li>More modular
+</li><li><em>Much</em> more discoverable
+</li><li>Unicode is (mostly) gone
+</li><li>Still poorly documented
+</li></ul></div>
+      </div><div class="content" id="slide-2">
+       <div class="container"><h1 id="I.+You+don%E2%80%99t+need+to+use+functional+programming+to+benefit+from+Scalaz%21">I. You don’t need to use functional programming to benefit from Scalaz!</h1></div>
+      </div><div class="content" id="slide-3">
+       <div class="container"><h1 id="1.+Scalaz+has+lots+of+random+utilities+%28although+could+use+some+more+%E2%80%A6%29">1. Scalaz has lots of random utilities (although could use some more …)</h1></div>
+      </div><div class="content" id="slide-4">
+       <div class="container"><h1 id="Random+utilities">Random utilities</h1><pre><code class="">&quot;1&quot;.toInt
+&quot;foo&quot;.toInt //uh-oh
+
+val iOpt: Option[Int] = &quot;foo&quot;.parseInt
+iOpt err &quot;not an int!&quot;
+println(iOpt.isDefined ? &quot;parsed&quot; | &quot;unparseable&quot;)
+</code></pre></div>
+      </div><div class="content" id="slide-5">
+       <div class="container"><h1 id="2.+Scalaz+has++alternatives+to+Java+legacies.">2. Scalaz has <em>better</em> alternatives to Java legacies.</h1></div>
+      </div><div class="content" id="slide-6">
+       <div class="container"><h1 id="Considered+Harmful"><code>==</code> Considered Harmful</h1><pre><code class="">val admin: Option[User] = //...
+val curUser: User = //...
+if (curUser == admin) { //oops! always false
+  //...
+}
+</code></pre></div>
+      </div><div class="content" id="slide-7">
+       <div class="container"><h1 id="Considered+Awesome"><code>===</code> Considered Awesome</h1><pre><code class="">implicit def userEqual = equalA[User]
+if (curUser === admin) { //doesn't compile!
+  //...
+}
+</code></pre></div>
+      </div><div class="content" id="slide-8">
+       <div class="container"><h1 id="II.+The+Typeclass+Pattern">II. The Typeclass Pattern</h1><p>You may have noticed this strange bit
+</p><pre><code class="">implicit def userEqual = equalA[User]
+</code></pre></div>
+      </div><div class="content" id="slide-9">
+       <div class="container"><h1 id="What+are+types%3F">What are types?</h1><p>A simple definition: types are collections of <em>expressions</em>.
+</p><h2 id="Polymophism">Polymophism</h2><p>Because we want our functions to work on many types.
+</p><h2 id="Ad-hoc+polymorphism">Ad-hoc polymorphism</h2><p>Polymorphic functions may do something different depending on its input type.
+</p></div>
+      </div><div class="content" id="slide-10">
+       <div class="container"><h1 id="Ad-hoc+polymorphism+using+inheritance+%26+subtyping">Ad-hoc polymorphism using inheritance &amp; subtyping</h1><pre><code class="">trait Equal[A] {
+  def ===(a: A): Boolean
+}
+case class Person(name: String, zip: Int) extends Equal[Person] {
+  def ===(that: Person) = //...
+}
+Person(&quot;yuvi&quot;, 19104) === Person(&quot;colleen&quot;, 12345)
+</code></pre></div>
+      </div><div class="content" id="slide-11">
+       <div class="container"><h1 id="Not+bad.+But+what+if+%E2%80%A6">Not bad. But what if …</h1><ul><li>… you don’t control the <code>Person</code> source code?
+</li><li>… you want more than one equality notion?
+</li><li>… you want your domain objects “light” and free of behavior?
+</li><li>… you want method implementations to be fully known at compile time?
+</li><li>… you want to leave the interface “open” so you can add new implementations later without re-jiggering a type hierarchy
+</li></ul></div>
+      </div><div class="content" id="slide-12">
+       <div class="container"><h1 id="Ad-hoc+polymorphism+using+typeclasses">Ad-hoc polymorphism using typeclasses</h1><pre><code class="">trait Equal[A] {
+  // A =&gt; A =&gt; Boolean
+  def equals(a1: A, a2: A): Boolean
+}
+def personEqual: Equal[Person] = new Person {
+  def equals(p1: Person, p2: Person): Boolean = //...
+}
+personEqual equals (Person(&quot;yuvi&quot;, 19104), Person(&quot;colleen&quot;, 12345))
+</code></pre></div>
+      </div><div class="content" id="slide-13">
+       <div class="container"><h1 id="Now+with+some+sugar">Now with some sugar</h1><pre><code class="">trait Equal[A] {
+  def(lhs: A, rhs: A): Boolean
+}
+object Equal {
+  implicit def addEqualOps[A:Equal](lhs: A) = new EqualOps(lhs)
+}
+class EqualOps[A](lhs: A)(implicit ev: Equal[A]) {
+  def ===(rhs: A) ev.equals(lhs, rhs)
+}
+implicit object PersonEqual extends Equal[Person] {
+  def equals(p1: Person, p2: Person): Boolean = //...
+}
+
+import Equal._
+p1 === p2
+</code></pre></div>
+      </div><div class="content" id="slide-14">
+       <div class="container"><h1 id="Note+this+is+a+brand+new+type+relationship">Note this is a brand new type relationship</h1><pre><code class="">//&quot;is-a&quot;
+def mycompare[A &lt;: Comparable](lhs: A, rhs: A) = lhs compare rhs
+
+//&quot;has-a&quot;
+def myequal[A:Equal](lhs: A, rhs: A) = lhs equals rhs
+
+//&quot;has-a&quot;, de-sugared, note &quot;ev&quot; is never used
+def myequal[A](lhs: A, rhs: A)(ev: Equal[A]) = lhs equals rhs
+</code></pre></div>
+      </div><div class="content" id="slide-15">
+       <div class="container"><h1 id="Advantages+of+typeclasses">Advantages of typeclasses</h1><ul><li>No dynamic dispatch, implementations known to compiler.
+</li><li>Behavior is de-coupled from domain object, AND
+</li><li>Behavior is de-coupled from inheritance, leaving the trait “open”
+</li><li>Multiple typeclass instances can exist side-by-side
+</li></ul><h1 id="Disadvantages+of+typeclasses">Disadvantages of typeclasses</h1><ul><li>Boilerplate (for now)
+</li><li>Run-time overhead of wrapper object creation (for now)
+</li></ul></div>
+      </div><div class="content" id="slide-16">
+       <div class="container"><h1 id="More+on+typeclasses">More on typeclasses</h1><ul><li>Seth Tisue’s NE Scala Talk (video): http://bit.ly/He7rgq
+</li><li>Erik Osheim’s PHASE talk (slides): http://bit.ly/pbsukl
+</li></ul></div>
+      </div><div class="content" id="slide-17">
+       <div class="container"><h1 id="III.+Let%E2%80%99s+get+to+some+real+functional+programming+%E2%80%A6">III. Let’s get to some real functional programming …</h1><p><img alt="pic" title="don't panic" src="main/dontpanic.jpg" />
+</p><h1 id="You+already+do+all+these+things+%E2%80%A6">You already do all these things …</h1></div>
+      </div><div class="content" id="slide-18">
+       <div class="container"><h1 id="Monoids">Monoids</h1><p>Things you can add.
+</p></div>
+      </div><div class="content" id="slide-19">
+       <div class="container"><h1 id="Technically%2C+Monoids">Technically, Monoids</h1><pre><code class="">// A =&gt; A =&gt; A
+// Int =&gt; Int =&gt; Int
+trait Semigroup[A] {
+  def plus[A](s1: A, s2: A): A
+}
+
+// A
+trait Monoid[A] extends Semigroup[A] {
+  def zero[A]: A
+}
+</code></pre></div>
+      </div><div class="content" id="slide-20">
+       <div class="container"><ul><li>Name some monoids!
+</li><li>Semigroup that isn’t a monoid?!
+</li></ul></div>
+      </div><div class="content" id="slide-21">
+       <div class="container"><h1 id="Functors">Functors</h1><p>Let’s keep it simple: if you can map over it, it’s a functor.
+</p><pre><code class="">// map: F[A] =&gt; (A =&gt; B) =&gt; F[B]
+// e.g., Option[Int] =&gt; (Int =&gt; String) =&gt; Option[String]
+
+trait Functor[F[_]] {
+  def map[A, B](r: F[A], f: A =&gt; B): F[B]
+}
+</code></pre></div>
+      </div><div class="content" id="slide-22">
+       <div class="container"><h1 id="has+a"><code>Option</code> has a <code>Functor</code></h1><pre><code class="">object OptionIsFunctor: Functor[Option] = new Functor[Option] {
+  def map[A, B](r: Option[A], f: A =&gt; B) = r match {
+    case None =&gt; None
+    case Some(a) =&gt; Some(f(a))
+  }
+}
+</code></pre></div>
+      </div><div class="content" id="slide-23">
+       <div class="container"><h1 id="has+a"><code>List</code> has a <code>Functor</code></h1><pre><code class="">object ListIsFunctor: Functor[List] = new Functor[List] {
+  def map[A, B](as: List[A], f: A =&gt; B) = as match {
+    case Nil =&gt; Nil
+    case h :: t =&gt; f(h) :: map(t, f)
+  }
+}
+</code></pre></div>
+      </div><div class="content" id="slide-24">
+       <div class="container"><h1 id="Aside%3A+This+is+what+Scala+already+does%2C+although+oddly+without+types+or+a+representation+of">Aside: This is what Scala already does, although oddly without types or a representation of <code>Functor</code></h1><pre><code class="">for (el &lt;- List(1, 2)) yield el + 10
+
+List(1, 2) map { _ + 10 }
+</code></pre></div>
+      </div><div class="content" id="slide-25">
+       <div class="container"><h1 id="Applicative+typeclass">Applicative typeclass</h1><pre><code class="">trait Applicative[F[_]] extends Functor[F] {
+  def pure(a: A): A
+  def apply...
+}
+</code></pre></div>
+      </div><div class="content" id="slide-26">
+       <div class="container"><h1 id="Applicatives+%28really%2C+applicative+functors%29">Applicatives (really, applicative functors)</h1><ul><li>No time for this … (read: I don’t really get it)
+</li><li>Um, something about parallel computation? Or reversing the direction of function application? … Or something?
+</li><li>Tony Morris will join us at the end to cover applicatives.
+</li></ul></div>
+      </div><div class="content" id="slide-27">
+       <div class="container"><h1 id="Trivial+example">Trivial example</h1><pre><code class="">// why aren't we making use of strict order?
+for {
+  url   &lt;- urlOpt
+  pw    &lt;- passwordOpt
+  uname &lt;- usernameOpt
+} yield DriverManager getConnection (url, pw, uname)
+
+// now we're not
+(url |@| pw |@| uname) { Driver.getConnection }
+</code></pre></div>
+      </div><div class="content" id="slide-28">
+       <div class="container"><h1 id="Monads">Monads</h1><p>Monads are like elephants? Pirates?
+</p></div>
+      </div><div class="content" id="slide-29">
+       <div class="container"><p>You can’t handle an <code>A</code>, so I’ll give you an <code>M[A]</code> for some monad <code>M</code>.
+</p><p><img alt="pic" title="monads" src="main/monads.jpg" />
+</p></div>
+      </div><div class="content" id="slide-30">
+       <div class="container"><h1 id="In+a+world+without+monads+%E2%80%A6">In a world without monads …</h1><pre><code class="">def perfectRoot(i: Int): Option[Int] = //...
+
+//shouldn't this be of type Int =&gt; Option[Int]?
+def doublePerfectRoot = perfectRoot compose perfectRoot
+
+//how do we go about this?
+val opt = perfectRoot(10000) //Some(100)
+opt map { perfectRoot(_) }   //Some(Some(10)), fail :(
+</code></pre></div>
+      </div><div class="content" id="slide-31">
+       <div class="container"><h1 id="has+a"><code>Option</code> has a <code>Monad</code></h1><pre><code class="">def perfectRoot(i: Int): Option[Int] = //...
+
+val opt = perfectRoot(10000) 
+opt map { perfectRoot(_) }     //Some(100)
+opt flatMap { perfectRoot(_) } //Some(10), yay!
+</code></pre><p>Monads = applicative functors that can <code>flatMap</code>
+</p></div>
+      </div><div class="content" id="slide-32">
+       <div class="container"><h1 id="Monad">Monad</h1><pre><code class="">trait Monad[M[_]] extends Applicative[M] {
+
+  // A =&gt; M[A]
+  // e.g., Int =&gt; List[Int]
+  def pure[A](a: =&gt; A): M[A]
+
+  // M[A] =&gt; (A =&gt; M[B]) =&gt; M[B]
+  // e.g., List[Int] =&gt; (Int =&gt; List[Int]) =&gt; List[Int]
+  def flatMap[A, B](a: M[A], f: A =&gt; M[B]): M[B]
+}
+</code></pre></div>
+      </div><div class="content" id="slide-33">
+       <div class="container"><h1 id="Monads+you+know">Monads you know</h1><ul><li><code>List[B]</code> - what’s wrong with <code>A -&gt; B</code>?
+</li><li><code>Option[B]</code> - what’s wrong with <code>A -&gt; B</code>?
+</li><li><code>Function1[B]</code> - what’s wrong with <code>A -&gt; B</code>?
+</li></ul></div>
+      </div><div class="content" id="slide-34">
+       <div class="container"><h1 id="Aside%3A+Scala+already+has+special+support+for+monads%2C+although+oddly+without+types+or+a+representation+of">Aside: Scala already has special support for monads, although oddly without types or a representation of <code>Monad</code></h1><pre><code class="">for {
+  a &lt;- aOpt
+  b &lt;- bOpt
+  c &lt;- cOpt
+} yield a + b + c
+
+aOpt.flatMap { a =&gt;
+  bOpt.flatMap { b =&gt;
+    cOpt.map { c =&gt;
+      a + b + c
+    }
+  }
+}
+</code></pre></div>
+      </div><div class="content" id="slide-35">
+       <div class="container"><h1 id="A+monad+you+might+not+know">A monad you might not know</h1><ul><li><code>IO[A]</code> - what’s wrong with <code>() -&gt; A</code>?
+</li></ul></div>
+      </div><div class="content" id="slide-36">
+       <div class="container"><ul><li>Aside: What is functional programming, anyway?
+</li><li><code>def now: Long</code>
+</li><li><code>def pnow: IO[Long]</code>
+</li></ul><pre><code class="">val n1 = now
+val n2 = now
+n2 - n1
+</code></pre></div>
+      </div><div class="content" id="slide-37">
+       <div class="container"><h1 id="in+action"><code>IO</code> in action</h1><pre><code class="">scala&gt; println(&quot;hello, world&quot;)
+hello, world
+
+scala&gt; putStrLn(&quot;hello, world&quot;)
+res1: scalaz.effects.IO[Unit] = scalaz.effects.IO$$anon$2@60419710
+</code></pre></div>
+      </div><div class="content" id="slide-38">
+       <div class="container"><h1 id="The++typeclass">The <code>IO</code> typeclass</h1><pre><code class="">trait IO[A] {
+  // A
+  // &quot;don't call until the end of the universe&quot;
+  def unsafePerformIO: A
+}
+</code></pre></div>
+      </div><div class="content" id="slide-39">
+       <div class="container"><pre><code class="">object CatsWithHatsApp {
+  def addHat(p: Picture): Picture = ...
+
+  def pmain(args: Vector[String]): IO[Unit] = {
+      val Vector(path) = args
+      for {
+        files &lt;- listDir(path) //List[File] &lt;- IO[List[File]]
+        file  &lt;- files         //File &lt;- List[File]
+        pic &lt;- readPic(file)   //Picture &lt;- IO[Picture]
+        _     &lt;- writeFile(    //() &lt;- IO[Unit]
+          file,
+          addHat(pic)
+        )
+      } yield ()
+  }
+
+  def main(args: Array[String]) = {
+    val program = pmain.(Vector.empty ++ args).except {
+      case e =&gt; putStrLn(&quot;failing with: &quot; e.toString)
+    }
+    program.unsafePerformIO //end of the universe!
+  }
+}
+</code></pre></div>
+      </div><div class="content" id="slide-40">
+       <div class="container"><h1 id="Other+typeclasses">Other typeclasses</h1><p><code>ApplicativePlus</code>, <code>MonadPlus</code>, <code>Comonad</code>, <code>Category</code>, <code>Arrow</code>, <code>ArrowPlus</code>, <code>Foldable</code>, <code>Traversable</code>, <code>Monad Transformers</code>, <code>Reader</code>, <code>Writer</code>, <code>State</code>, <code>Identity</code>, and more
+</p><p>These are functional “design patterns.”
+</p></div>
+      </div><div class="content" id="slide-41">
+       <div class="container"><h1 id="Thank+you+%E2%80%A6+questions%3F">Thank you … questions?</h1></div>
+      </div>
+          </div>
+        </div>
+        <script type="text/javascript" src="js/custom.js?1338512208042"></script>
+      </body>
+    </html>
